@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spam Email Classifier</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Spam Classifier</h1>
+            <p>Detect if an email is Spam or Ham instantly.</p>
+        </header>
+
+        <main>
+            <div class="input-section">
+                <textarea id="messageInput" placeholder="Paste your email content here..."></textarea>
+                <button id="classifyBtn">Classify Message</button>
+            </div>
+
+            <div id="result" class="result-section hidden">
+                <h2>Prediction: <span id="predictionLabel"></span></h2>
+                <div class="confidence-bar">
+                    <div id="confidenceFill" class="confidence-fill"></div>
+                </div>
+                <p>Confidence: <span id="confidenceScore"></span>%</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('classifyBtn').addEventListener('click', async () => {
+            const message = document.getElementById('messageInput').value;
+            if (!message) return;
+
+            const btn = document.getElementById('classifyBtn');
+            btn.disabled = true;
+            btn.innerText = "Analyzing...";
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                const resultDiv = document.getElementById('result');
+                const labelSpan = document.getElementById('predictionLabel');
+                const scoreSpan = document.getElementById('confidenceScore');
+                const fillDiv = document.getElementById('confidenceFill');
+
+                labelSpan.innerText = data.prediction;
+                labelSpan.className = data.prediction.toLowerCase();
+                scoreSpan.innerText = (data.confidence * 100).toFixed(1);
+                
+                fillDiv.style.width = `${data.confidence * 100}%`;
+                fillDiv.className = `confidence-fill ${data.prediction.toLowerCase()}`;
+
+                resultDiv.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert("An error occurred. Please try again.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Classify Message";
+            }
+        });
+    </script>
+</body>
+</html>
